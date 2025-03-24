@@ -1,0 +1,10 @@
+$env:PYTHONPATH=".;$env:PYTHONPATH"; pytest tests/test01/test_01_login.py
+$env:PYTHONPATH=".;$env:PYTHONPATH"; pytest tests/test_02_product.py
+$env:PYTHONPATH=".;$env:PYTHONPATH"; pytest --html=relatorio_teste.html
+$env:PYTHONPATH=".;$env:PYTHONPATH"; pytest --html=relatorio_teste.html --headless
+
+
+$env:HEADLESS='false'
+$env:HEADLESS='true'
+
+pytest -v "C:\Users\vmaxb\Estudos\exercicios selenium\exerc_01\test_execution\test_fullexecution.py" --html=relatorio_teste.html
