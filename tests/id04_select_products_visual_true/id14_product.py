@@ -5,7 +5,7 @@ from classes.saucedemo.credencials import Credenciais
 from classes.saucedemo.click import TestClick
 from classes.base_class import BaseClass
 
-cenario = "05_select_full_products_visual_true"
+cenario = "04_select_full_products_visual_true"
 id_test = "test_14"
 
 class Teste14SelectProduct:

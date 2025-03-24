@@ -7,4 +7,4 @@ $env:PYTHONPATH=".;$env:PYTHONPATH"; pytest --html=relatorio_teste.html --headle
 $env:HEADLESS='false'
 $env:HEADLESS='true'
 
-pytest -v "C:\Users\vmaxb\Estudos\exercicios selenium\exerc_01\test_execution\test_fullexecution.py" --html=relatorio_teste.html
+pytest -v "C:\Users\vmaxb\Estudos\exercicios selenium\exerc_01\test_execution\" --html=relatorio_teste.html
