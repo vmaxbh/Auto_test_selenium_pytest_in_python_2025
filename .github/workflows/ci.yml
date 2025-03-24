@@ -2,9 +2,9 @@ name: Automação Selenium com Python
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 env:
   VERSAO_PYTHON: '3.9'
