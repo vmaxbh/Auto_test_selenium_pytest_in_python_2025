@@ -1,125 +1,96 @@
-name: Python Selenium CI - Windows
+name: Automação Selenium com Python
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
 
 env:
-  PYTHON_VERSION: '3.9'  # Versão do Python compatível com seu projeto
-  CHROME_VERSION: 'latest'  # Pode especificar uma versão exata se necessário
+  VERSAO_PYTHON: '3.9'
+  VERSAO_CHROME: 'latest'
+
+permissions:
+  contents: read
+  actions: write
+  checks: write
 
 jobs:
-  test:
-    runs-on: windows-latest  # Executa em ambiente Windows
+  testes:
+    runs-on: windows-latest  # Executa no Windows
 
     steps:
-    # Passo 1: Checkout do código
-    - uses: actions/checkout@v3
+    # Passo 1: Baixar o código
+    - name: Baixar repositório
+      uses: actions/checkout@v3
 
-    # Passo 2: Configuração do Python
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
+    # Passo 2: Configurar Python
+    - name: Instalar Python ${{ env.VERSAO_PYTHON }}
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ env.VERSAO_PYTHON }}
 
-    # Passo 3: Instalação do Google Chrome
-    - name: Install Google Chrome
+    # Passo 3: Instalar Google Chrome
+    - name: Instalar Google Chrome
       shell: pwsh
       run: |
-        # Instala o Chrome de forma silenciosa
-        $chromeInstaller = "chrome_installer.exe"
-        $chromeURL = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
+        $instalador = "chrome_installer.exe"
+        Write-Output "Baixando o Chrome..."
+        Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile $instalador
         
-        Write-Output "Baixando o Google Chrome..."
-        Invoke-WebRequest $chromeURL -OutFile $chromeInstaller
-        
-        Write-Output "Instalando o Google Chrome..."
-        Start-Process -FilePath $chromeInstaller -Args "/silent /install" -Verb RunAs -Wait
+        Write-Output "Instalando o Chrome..."
+        Start-Process -FilePath $instalador -Args "/silent /install" -Verb RunAs -Wait
         
         Write-Output "Limpando instalador..."
-        Remove-Item $chromeInstaller
+        Remove-Item $instalador
         
-        Write-Output "Verificando versão do Chrome..."
-        $chromePath = "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
-        if (Test-Path $chromePath) {
-          $version = (Get-Item $chromePath).VersionInfo.FileVersion
-          Write-Output "Chrome instalado - Versão: $version"
-        } else {
-          Write-Error "Falha na instalação do Chrome"
-          exit 1
-        }
+        Write-Output "Versão instalada: $((Get-Item (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe').'(Default)').VersionInfo.ProductVersion)"
 
-    # Passo 4: Configuração do ChromeDriver
-    - name: Setup ChromeDriver
+    # Passo 4: Configurar ChromeDriver
+    - name: Instalar ChromeDriver
       shell: pwsh
       run: |
-        # Obtém a versão do Chrome instalado
-        $chromePath = "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
-        $chromeVersion = (Get-Item $chromePath).VersionInfo.FileVersion.Split('.')[0]
+        $caminhoChrome = "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe"
+        $versaoChrome = (Get-Item $caminhoChrome).VersionInfo.FileVersion.Split('.')[0]
+        $urlVersao = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$versaoChrome"
+        $versaoDriver = Invoke-RestMethod -Uri $urlVersao
         
-        Write-Output "Versão principal do Chrome detectada: $chromeVersion"
-        
-        # Baixa o ChromeDriver correspondente
-        $driverURL = "https://chromedriver.storage.googleapis.com/$chromeVersion/chromedriver_win32.zip"
-        Write-Output "Baixando ChromeDriver: $driverURL"
-        
-        Invoke-WebRequest $driverURL -OutFile "chromedriver.zip"
+        Write-Output "Baixando ChromeDriver versão $versaoDriver"
+        Invoke-WebRequest "https://chromedriver.storage.googleapis.com/$versaoDriver/chromedriver_win32.zip" -OutFile "chromedriver.zip"
         Expand-Archive -Path "chromedriver.zip" -DestinationPath "$env:GITHUB_WORKSPACE"
+        Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE"
         
-        # Adiciona ao PATH
-        $driverPath = "$env:GITHUB_WORKSPACE"
-        Write-Output "Adicionando ao PATH: $driverPath"
-        Add-Content -Path $env:GITHUB_PATH -Value $driverPath
-        
-        # Verifica a instalação
-        Write-Output "Verificando ChromeDriver..."
-        & "$driverPath\chromedriver.exe" --version
+        Write-Output "ChromeDriver instalado com sucesso"
 
-    # Passo 5: Criação e ativação do ambiente virtual
-    - name: Create and activate virtual environment
+    # Passo 5: Criar ambiente virtual
+    - name: Criar ambiente virtual
       shell: pwsh
       run: |
         python -m venv venv
         venv\Scripts\activate
         python -m pip install --upgrade pip
 
-    # Passo 6: Instalação de dependências
-    - name: Install dependencies
+    # Passo 6: Instalar dependências
+    - name: Instalar dependências
       shell: pwsh
       run: |
         venv\Scripts\activate
         pip install -r requirements.txt
-        pip install pytest pytest-html pytest-xdist
+        pip install pytest pytest-html
 
-    # Passo 7: Execução dos testes (com variáveis de ambiente se necessário)
-    - name: Run tests
+    # Passo 7: Executar testes
+    - name: Rodar testes
       shell: pwsh
       env:
-        SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
-        SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
-        BASE_URL: "https://www.saucedemo.com"  # Exemplo, ajuste conforme necessário
+        USUARIO_SAUCE: ${{ secrets.USUARIO_SAUCE }}
+        CHAVE_SAUCE: ${{ secrets.CHAVE_SAUCE }}
       run: |
         venv\Scripts\activate
-        Write-Output "Executando testes..."
-        python -m pytest tests/ -v --html=relatorio_teste.html --self-contained-html
-        
-        # Opcional: Execução paralela (descomente se quiser)
-        # python -m pytest tests/ -n auto --dist=loadscope -v --html=relatorio_teste.html
+        python -m pytest tests/ -v --html=relatorio_teste.html
 
-    # Passo 8: Upload dos relatórios e artefatos
-    - name: Upload test report
+    # Passo 8: Enviar relatório
+    - name: Enviar relatório de testes
       uses: actions/upload-artifact@v3
-      if: always()
       with:
-        name: pytest-report
+        name: relatorio-pytest
         path: relatorio_teste.html
-
-    # Passo 9 (Opcional): Upload de screenshots se houver falhas
-    - name: Upload screenshots on failure
-      if: failure()
-      uses: actions/upload-artifact@v3
-      with:
-        name: selenium-screenshots
-        path: tests/screenshots/  # Ajuste conforme seu diretório de screenshots
