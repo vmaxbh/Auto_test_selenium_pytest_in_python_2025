@@ -2,7 +2,7 @@ name: Automação Selenium - Compra Standard
 on: [push, pull_request]
 
 jobs:
-  test-on-windows:
+  Autimation-Saucedemo-Site_Compras:
     runs-on: windows-latest
     timeout-minutes: 30
 
