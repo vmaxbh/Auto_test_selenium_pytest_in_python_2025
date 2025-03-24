@@ -35,13 +35,17 @@ jobs:
       shell: pwsh
       run: |
         # Executa os testes com configurações melhoradas para o relatório
-        python -m pytest test_execution/test_fullexecution.py -v \
-          --html=relatorio_teste.html \
-          --self-contained-html \
-          --capture=sys \
-          --show-capture=log \
-          --metadata=Runner-GH-Actions \
-          --metadata=Python-3.9
+        $pytestArgs = @(
+          "test_execution/test_fullexecution.py",
+          "-v",
+          "--html=relatorio_teste.html",
+          "--self-contained-html",
+          "--capture=sys",
+          "--show-capture=log",
+          "--metadata", "Runner-GH-Actions",
+          "--metadata", "Python-3.9"
+        )
+        python -m pytest $pytestArgs
         
         # Verifica se o arquivo foi criado
         if (-not (Test-Path "relatorio_teste.html")) {
