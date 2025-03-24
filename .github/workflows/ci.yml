@@ -18,12 +18,9 @@ jobs:
       shell: pwsh
       run: |
         $ProgressPreference = 'SilentlyContinue'
-        # Instalação do Chrome
         Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile chrome_installer.exe
         Start-Process -FilePath .\chrome_installer.exe -Args "/silent /install" -Wait
         Remove-Item chrome_installer.exe
-        
-        # Instalação do ChromeDriver via webdriver-manager
         python -m pip install webdriver-manager
 
     - name: Install dependencies
@@ -32,31 +29,23 @@ jobs:
         pip install -r requirements.txt pytest pytest-html
 
     - name: Run tests and verify report
-      shell: pwsh
+      shell: cmd  # Mudamos para cmd em vez de pwsh para evitar problemas de parsing
       run: |
-        # Executa os testes com configurações melhoradas para o relatório
-        $command = @(
-          "-m", "pytest",
-          "test_execution/test_fullexecution.py",
-          "-v",
-          "--html=relatorio_teste.html",
-          "--self-contained-html",
-          "--capture=sys",
-          "--show-capture=log",
-          "--metadata=Runner-GH-Actions",
-          "--metadata=Python-3.9"
+        python -m pytest test_execution/test_fullexecution.py -v ^
+          --html=relatorio_teste.html ^
+          --self-contained-html ^
+          --capture=sys ^
+          --show-capture=log ^
+          --metadata Runner=GH-Actions ^
+          --metadata Python=3.9
+        
+        if not exist "relatorio_teste.html" (
+          echo Relatório não foi gerado!
+          dir /s /b *.html
+          exit /b 1
         )
-        python @command
         
-        # Verifica se o arquivo foi criado
-        if (-not (Test-Path "relatorio_teste.html")) {
-          Write-Error "Relatório não foi gerado!"
-          Get-ChildItem -Recurse | Where-Object { $_.Name -like "*.html" } | Select-Object FullName
-          exit 1
-        }
-        
-        # Renomeia para garantir o nome correto
-        Copy-Item "relatorio_teste.html" "report.html" -Force
+        copy /y relatorio_teste.html report.html
 
     - name: Upload test report
       uses: actions/upload-artifact@v4
