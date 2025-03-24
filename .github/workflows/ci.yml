@@ -1,96 +1,54 @@
-name: Automação Selenium com Python
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  VERSAO_PYTHON: '3.9'
-  VERSAO_CHROME: 'latest'
-
-permissions:
-  contents: read
-  actions: write
-  checks: write
+name: Automação Selenium Multiplataforma
+on: [push, pull_request]
 
 jobs:
-  testes:
-    runs-on: windows-latest  # Executa no Windows
-
+  test-on-windows:
+    name: Testes no Windows
+    runs-on: windows-latest
     steps:
-    # Passo 1: Baixar o código
-    - name: Baixar repositório
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install Chrome and Driver
+        shell: pwsh
+        run: |
+          # Seus comandos de instalação do Chrome/Driver
+          # ...
+          
+      - name: Run Tests
+        run: |
+          python -m pytest tests/ --html=report.html
+          
+      - uses: actions/upload-artifact@v3
+        with:
+          name: windows-report
+          path: report.html
 
-    # Passo 2: Configurar Python
-    - name: Instalar Python ${{ env.VERSAO_PYTHON }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.VERSAO_PYTHON }}
-
-    # Passo 3: Instalar Google Chrome
-    - name: Instalar Google Chrome
-      shell: pwsh
-      run: |
-        $instalador = "chrome_installer.exe"
-        Write-Output "Baixando o Chrome..."
-        Invoke-WebRequest "https://dl.google.com/chrome/install/latest/chrome_installer.exe" -OutFile $instalador
-        
-        Write-Output "Instalando o Chrome..."
-        Start-Process -FilePath $instalador -Args "/silent /install" -Verb RunAs -Wait
-        
-        Write-Output "Limpando instalador..."
-        Remove-Item $instalador
-        
-        Write-Output "Versão instalada: $((Get-Item (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe').'(Default)').VersionInfo.ProductVersion)"
-
-    # Passo 4: Configurar ChromeDriver
-    - name: Instalar ChromeDriver
-      shell: pwsh
-      run: |
-        $caminhoChrome = "${env:ProgramFiles}\Google\Chrome\Application\chrome.exe"
-        $versaoChrome = (Get-Item $caminhoChrome).VersionInfo.FileVersion.Split('.')[0]
-        $urlVersao = "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$versaoChrome"
-        $versaoDriver = Invoke-RestMethod -Uri $urlVersao
-        
-        Write-Output "Baixando ChromeDriver versão $versaoDriver"
-        Invoke-WebRequest "https://chromedriver.storage.googleapis.com/$versaoDriver/chromedriver_win32.zip" -OutFile "chromedriver.zip"
-        Expand-Archive -Path "chromedriver.zip" -DestinationPath "$env:GITHUB_WORKSPACE"
-        Add-Content -Path $env:GITHUB_PATH -Value "$env:GITHUB_WORKSPACE"
-        
-        Write-Output "ChromeDriver instalado com sucesso"
-
-    # Passo 5: Criar ambiente virtual
-    - name: Criar ambiente virtual
-      shell: pwsh
-      run: |
-        python -m venv venv
-        venv\Scripts\activate
-        python -m pip install --upgrade pip
-
-    # Passo 6: Instalar dependências
-    - name: Instalar dependências
-      shell: pwsh
-      run: |
-        venv\Scripts\activate
-        pip install -r requirements.txt
-        pip install pytest pytest-html
-
-    # Passo 7: Executar testes
-    - name: Rodar testes
-      shell: pwsh
-      env:
-        USUARIO_SAUCE: ${{ secrets.USUARIO_SAUCE }}
-        CHAVE_SAUCE: ${{ secrets.CHAVE_SAUCE }}
-      run: |
-        venv\Scripts\activate
-        python -m pytest tests/ -v --html=relatorio_teste.html
-
-    # Passo 8: Enviar relatório
-    - name: Enviar relatório de testes
-      uses: actions/upload-artifact@v3
-      with:
-        name: relatorio-pytest
-        path: relatorio_teste.html
+  test-on-ubuntu:
+    name: Testes no Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install Chrome and Driver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          
+      - name: Run Tests
+        run: |
+          python -m pytest tests/ --html=report.html
+          
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-report
+          path: report.html
