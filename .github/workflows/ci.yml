@@ -1,0 +1,15 @@
+name: CI Windows
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest  # Windows Server 2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run PowerShell script
+        run: |
+          Write-Host "Rodando no Windows!"
+          Get-ChildItem
+          # Seu script PowerShell aqui
