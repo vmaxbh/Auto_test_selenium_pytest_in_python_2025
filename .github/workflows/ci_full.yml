@@ -47,6 +47,8 @@ jobs:
     - name: Run tests
       run: |
         python -m pytest test_execution/test_execution_compra_standard.py
+        python -m pytest test_execution/test_execution_compra_visual_true.py
+        python -m pytest test_execution/test_execution_compra_problem.py
         
     - name: Process and upload report
       shell: pwsh
