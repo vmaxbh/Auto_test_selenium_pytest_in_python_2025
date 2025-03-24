@@ -34,7 +34,7 @@ jobs:
         [pytest]
         addopts = 
             -v
-            --html=relatorio_teste.html
+            --html={htmlpath}
             --self-contained-html
             --capture=sys
             --show-capture=log
@@ -44,28 +44,42 @@ jobs:
             Platform: Windows
         "@ > pytest.ini
 
-    - name: Run tests
+    - name: Run Standard Test
       run: |
-        python -m pytest test_execution/test_execution_compra_standard.py
-        python -m pytest test_execution/test_execution_compra_visual_true.py
-        python -m pytest test_execution/test_execution_compra_problem.py
-        
-    - name: Process and upload report
+        python -m pytest test_execution/test_execution_compra_standard.py --html=relatorio_standard.html --self-contained-html
+      
+    - name: Run Visual True Test
+      run: |
+        python -m pytest test_execution/test_execution_compra_visual_true.py --html=relatorio_visual_true.html --self-contained-html
+      
+    - name: Run Problem Test
+      run: |
+        python -m pytest test_execution/test_execution_compra_problem.py --html=relatorio_problem.html --self-contained-html
+
+    - name: Process and upload reports
       shell: pwsh
       run: |
-        # Corrige possíveis problemas de encoding
-        $content = Get-Content -Path "relatorio_teste.html" -Raw
-        $content = $content -replace '<\s*br\s*/?>', '<br>' -replace '<\s*/\s*div\s*>', '</div>'
-        $content | Out-File -FilePath "report.html" -Encoding utf8 -Force
+        # Processa cada relatório individualmente
+        $files = @("relatorio_standard.html", "relatorio_visual_true.html", "relatorio_problem.html")
         
-        if (-not (Test-Path "report.html")) {
-          Write-Error "Relatório não foi gerado corretamente!"
-          exit 1
+        foreach ($file in $files) {
+            if (Test-Path $file) {
+                $content = Get-Content -Path $file -Raw
+                $content = $content -replace '<\s*br\s*/?>', '<br>' -replace '<\s*/\s*div\s*>', '</div>'
+                $processedName = "processed_$file"
+                $content | Out-File -FilePath $processedName -Encoding utf8 -Force
+                Write-Output "Processed $file to $processedName"
+            } else {
+                Write-Warning "File $file not found!"
+            }
         }
 
-    - name: Upload test report
+    - name: Upload test reports
       uses: actions/upload-artifact@v4
       with:
-        name: relatorio-compra-standard
-        path: reportcomprastandard.html
+        name: relatorios-automacao
+        path: |
+          processed_relatorio_standard.html
+          processed_relatorio_visual_true.html
+          processed_relatorio_problem.html
         if-no-files-found: error
