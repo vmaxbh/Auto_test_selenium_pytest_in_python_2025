@@ -67,5 +67,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: relatorio-compra-standard
-        path: report_compra_standard.html
+        path: reportcomprastandard.html
         if-no-files-found: error
