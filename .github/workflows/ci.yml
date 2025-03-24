@@ -46,7 +46,7 @@ jobs:
     # Passo 5: Executar testes (o WebDriverManager cuidará do ChromeDriver)
     - name: Run tests
       run: |
-        python -m pytest tests/ -v --html=report.html
+        python -m pytest test_execution/test_fullexecution.py -v --html=relatorio_teste.html
 
     # Passo 6: Upload do relatório
     - name: Upload test report
