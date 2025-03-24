@@ -8,7 +8,7 @@ from classes.base_class import BaseClass
 cenario = "05_select_full_products_visual_true"
 id_test = "test_14"
 
-class Teste14:
+class Teste14SelectProduct:
     @pytest.fixture(autouse=True)
     def setup_method(self, browser):
         self.driver = browser 

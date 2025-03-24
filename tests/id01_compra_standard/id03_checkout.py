@@ -7,10 +7,10 @@ from classes.saucedemo.navigate import TestNavigate
 from classes.saucedemo.input import TestFillData
 from classes.base_class import BaseClass
 
-cenario = "02_Compra_Sauce_Labs_bolt_t_shirt"
-id_test = "test_09"
+cenario = "01_Compra_Sauce_Labs_BackPack"
+id_test = "test_03"
 
-class Teste09LogOut:
+class Teste03Checkout:
     @pytest.fixture(autouse=True)
     def setup_method(self, browser):
         self.driver = browser 
@@ -20,15 +20,22 @@ class Teste09LogOut:
         self.nav = TestNavigate(self.driver)
         self.input = TestFillData(self.driver)
 
-    def test_logout(self):
+    def test_checkout(self):
         step = "step_1"
         self.login_page.acessar_site()
-        self.login_page.fazer_login(Credenciais.USUARIO_PROBLEM, Credenciais.SENHA_CORRETA)
+        self.login_page.fazer_login(Credenciais.USUARIO_CORRETO, Credenciais.SENHA_CORRETA)
+        self.nav.navigate_checkout_action_checkout()
         self.base.capture_screenshot(cenario, f"Evidencias {id_test}", step)
         step = "step_2"
-        self.nav.navigate_logout_action_logout()
+        self.input.fill_checkout_your_information("Maxwell", "Viana", "30710520")
         self.base.capture_screenshot(cenario, f"Evidencias {id_test}", step)
-        
+        step = "step_3"
+        self.click.click_products("//input[@id='continue']")
+        self.base.capture_screenshot(cenario, f"Evidencias {id_test}", step)
+        step = "step_4"
+        self.click.click_products("//button[@id='finish']")
+        self.base.capture_screenshot(cenario, f"Evidencias {id_test}", step)
+        self.click.click_products("//button[@id='back-to-products']")
        
         
 

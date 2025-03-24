@@ -8,7 +8,7 @@ from classes.base_class import BaseClass
 cenario = "02_Compra_Sauce_Labs_bolt_t_shirt"
 id_test = "test_07"
 
-class Teste07:
+class Teste07EscolhaProduto:
     @pytest.fixture(autouse=True)
     def setup_method(self, browser):
         self.driver = browser 
