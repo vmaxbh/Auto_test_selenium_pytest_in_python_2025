@@ -1,15 +1,125 @@
-name: CI Windows
-on: [push, pull_request]
+name: Python Selenium CI - Windows
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  PYTHON_VERSION: '3.9'  # Versão do Python compatível com seu projeto
+  CHROME_VERSION: 'latest'  # Pode especificar uma versão exata se necessário
 
 jobs:
-  build:
-    runs-on: windows-latest  # Windows Server 2022
+  test:
+    runs-on: windows-latest  # Executa em ambiente Windows
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    # Passo 1: Checkout do código
+    - uses: actions/checkout@v3
+
+    # Passo 2: Configuração do Python
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    # Passo 3: Instalação do Google Chrome
+    - name: Install Google Chrome
+      shell: pwsh
+      run: |
+        # Instala o Chrome de forma silenciosa
+        $chromeInstaller = "chrome_installer.exe"
+        $chromeURL = "https://dl.google.com/chrome/install/latest/chrome_installer.exe"
         
-      - name: Run PowerShell script
-        run: |
-          Write-Host "Rodando no Windows!"
-          Get-ChildItem
-          # Seu script PowerShell aqui
+        Write-Output "Baixando o Google Chrome..."
+        Invoke-WebRequest $chromeURL -OutFile $chromeInstaller
+        
+        Write-Output "Instalando o Google Chrome..."
+        Start-Process -FilePath $chromeInstaller -Args "/silent /install" -Verb RunAs -Wait
+        
+        Write-Output "Limpando instalador..."
+        Remove-Item $chromeInstaller
+        
+        Write-Output "Verificando versão do Chrome..."
+        $chromePath = "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+        if (Test-Path $chromePath) {
+          $version = (Get-Item $chromePath).VersionInfo.FileVersion
+          Write-Output "Chrome instalado - Versão: $version"
+        } else {
+          Write-Error "Falha na instalação do Chrome"
+          exit 1
+        }
+
+    # Passo 4: Configuração do ChromeDriver
+    - name: Setup ChromeDriver
+      shell: pwsh
+      run: |
+        # Obtém a versão do Chrome instalado
+        $chromePath = "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe"
+        $chromeVersion = (Get-Item $chromePath).VersionInfo.FileVersion.Split('.')[0]
+        
+        Write-Output "Versão principal do Chrome detectada: $chromeVersion"
+        
+        # Baixa o ChromeDriver correspondente
+        $driverURL = "https://chromedriver.storage.googleapis.com/$chromeVersion/chromedriver_win32.zip"
+        Write-Output "Baixando ChromeDriver: $driverURL"
+        
+        Invoke-WebRequest $driverURL -OutFile "chromedriver.zip"
+        Expand-Archive -Path "chromedriver.zip" -DestinationPath "$env:GITHUB_WORKSPACE"
+        
+        # Adiciona ao PATH
+        $driverPath = "$env:GITHUB_WORKSPACE"
+        Write-Output "Adicionando ao PATH: $driverPath"
+        Add-Content -Path $env:GITHUB_PATH -Value $driverPath
+        
+        # Verifica a instalação
+        Write-Output "Verificando ChromeDriver..."
+        & "$driverPath\chromedriver.exe" --version
+
+    # Passo 5: Criação e ativação do ambiente virtual
+    - name: Create and activate virtual environment
+      shell: pwsh
+      run: |
+        python -m venv venv
+        venv\Scripts\activate
+        python -m pip install --upgrade pip
+
+    # Passo 6: Instalação de dependências
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        venv\Scripts\activate
+        pip install -r requirements.txt
+        pip install pytest pytest-html pytest-xdist
+
+    # Passo 7: Execução dos testes (com variáveis de ambiente se necessário)
+    - name: Run tests
+      shell: pwsh
+      env:
+        SAUCE_USERNAME: ${{ secrets.SAUCE_USERNAME }}
+        SAUCE_ACCESS_KEY: ${{ secrets.SAUCE_ACCESS_KEY }}
+        BASE_URL: "https://www.saucedemo.com"  # Exemplo, ajuste conforme necessário
+      run: |
+        venv\Scripts\activate
+        Write-Output "Executando testes..."
+        python -m pytest tests/ -v --html=relatorio_teste.html --self-contained-html
+        
+        # Opcional: Execução paralela (descomente se quiser)
+        # python -m pytest tests/ -n auto --dist=loadscope -v --html=relatorio_teste.html
+
+    # Passo 8: Upload dos relatórios e artefatos
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: pytest-report
+        path: relatorio_teste.html
+
+    # Passo 9 (Opcional): Upload de screenshots se houver falhas
+    - name: Upload screenshots on failure
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: selenium-screenshots
+        path: tests/screenshots/  # Ajuste conforme seu diretório de screenshots
