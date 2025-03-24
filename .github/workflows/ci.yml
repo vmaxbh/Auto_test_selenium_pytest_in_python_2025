@@ -34,8 +34,14 @@ jobs:
     - name: Run tests and verify report
       shell: pwsh
       run: |
-        # Executa os testes e verifica se o relatório foi criado
-        python -m pytest test_execution/test_fullexecution.py -v --html=relatorio_teste.html
+        # Executa os testes com configurações melhoradas para o relatório
+        python -m pytest test_execution/test_fullexecution.py -v \
+          --html=relatorio_teste.html \
+          --self-contained-html \
+          --capture=sys \
+          --show-capture=log \
+          --metadata=Runner-GH-Actions \
+          --metadata=Python-3.9
         
         # Verifica se o arquivo foi criado
         if (-not (Test-Path "relatorio_teste.html")) {
